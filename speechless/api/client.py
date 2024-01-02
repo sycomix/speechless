@@ -31,8 +31,7 @@ def post_http_request(prompt: str,
             "max_new_tokens": 1024,
         },
     }
-    response = requests.post(api_url, headers=headers, json=pload, stream=True)
-    return response
+    return requests.post(api_url, headers=headers, json=pload, stream=True)
 
 
 def get_streaming_response(response: requests.Response) -> Iterable[List[str]]:
@@ -41,17 +40,11 @@ def get_streaming_response(response: requests.Response) -> Iterable[List[str]]:
                                      delimiter=b"\0"):
         print(f"{chunk=}")
         if chunk:
-            # data = json.loads(chunk.decode("utf-8"))
-            # output = data["text"]
-            output = chunk.decode("utf-8")
-            yield output
+            yield chunk.decode("utf-8")
 
 
 def get_response(response: requests.Response) -> List[str]:
-    data = json.loads(response.content)
-    # output = data["text"]
-    output = data
-    return output
+    return json.loads(response.content)
 
 
 if __name__ == "__main__":

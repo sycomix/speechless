@@ -46,7 +46,7 @@ class Model:
         """
         input_ids = self.tokenizer(prompt, return_tensors="pt").input_ids
         input_ids = input_ids.cuda()
-        max_length = max_length + input_ids.flatten().size(0)
+        max_length += input_ids.flatten().size(0)
         attention_mask = torch.ones(input_ids.shape, dtype=torch.long, device="cuda")
         with torch.no_grad():
             output = self.model.generate(
@@ -72,23 +72,6 @@ class Model:
         self, prompt: str, max_tokens: int, temperature: float, n: int, top_p, stop
     ):
         raise NotImplementedError("This code needs to be updated to take a list of prompts.")
-        if self.fim_return:
-            middles = self.fill_in_the_middle([(prompt.strip(), "    return result")] * n, max_tokens, temperature)
-            middles = [stop_at_stop_token(middle, stop) for middle in middles]
-            return [ s + "    return result" for s in middles ]
-        
-        prompt = prompt.strip()  # NOTE(arjun): Critical
-        output_tensors = self.completion_tensors(
-            prompt,
-            max_tokens,
-            temperature,
-            n,
-            top_p,
-        )
-        return [
-            stop_at_stop_token(self.decode_single_output(output_tensor, prompt), stop + self.special_tokens)
-            for output_tensor in output_tensors
-        ]
 
     def fill_in_the_middle(self, prefix_suffix_tuples: List[Tuple[str, str]], max_tokens: int, temperature: float) -> List[str]:
         prompts = [f"{FIM_PREFIX}{prefix}{FIM_SUFFIX}{suffix}{FIM_MIDDLE}" for prefix, suffix in prefix_suffix_tuples]
@@ -126,7 +109,7 @@ def main():
     args = args.parse_args()
     revision = CHECKPOINT_TO_REVISION[args.checkpoint]
     model = Model(args.fim_return, revision)
-    make_main(args, "bigcode_15b_" + args.checkpoint, model.completions)
+    make_main(args, f"bigcode_15b_{args.checkpoint}", model.completions)
 
 if __name__ == "__main__":
     main()

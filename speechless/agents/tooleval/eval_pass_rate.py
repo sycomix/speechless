@@ -32,10 +32,7 @@ def write_results(filename: str, reference_model: str, label_cnt: dict) -> None:
             elif label_cnt[query_id]["passed"] < label_cnt[query_id]["failed"]:
                 final_label = "failed"
             else:
-                if random.random() < 0.5: # if tie, random choose
-                    final_label = "passed"
-                else:
-                    final_label = "failed"
+                final_label = "passed" if random.random() < 0.5 else "failed"
             query = label_cnt[query_id]["query"]
             task_solvable = label_cnt[query_id]["task_solvable"]
             tool_names = label_cnt[query_id]["tool_names"]
@@ -65,10 +62,10 @@ if __name__ == "__main__":
         except:
             not_hallucinate = True
         answer_steps, final_step = get_steps(example)
-        
+
         if "'name': 'Finish'" not in final_step:
             return query_id, TaskStatus.Solvable, AnswerStatus.Unsolved, "failed", "No answer", not_hallucinate
-        
+
         is_solved, is_solved_reason = evaluator.check_is_solved(
             {
                 'query':example['query'],
@@ -77,13 +74,7 @@ if __name__ == "__main__":
             example['answer'],
             return_reason=True
         )
-        if is_solved == AnswerStatus.Solved:
-            is_solved_flag = True
-        elif is_solved == AnswerStatus.Unsolved:
-            is_solved_flag = False
-        else:
-            is_solved_flag = False
-
+        is_solved_flag = is_solved == AnswerStatus.Solved
         task_solvable, task_solvable_reason = evaluator.check_task_solvable(
             {
                 'query':example['query'],
@@ -104,15 +95,15 @@ if __name__ == "__main__":
         )
 
         reason = f"Is solved: {is_solved_reason}\nTask solvable: {task_solvable_reason}"
-        if is_passed == AnswerPass.Passed:
+        if (
+            is_passed != AnswerPass.Passed
+            and is_passed != AnswerPass.Failed
+            and random.random() < 0.5
+            or is_passed == AnswerPass.Passed
+        ): # if unsure, random choose
             label = "passed"
-        elif is_passed == AnswerPass.Failed:
-            label = "failed"
         else:
-            if random.random() < 0.5: # if unsure, random choose
-                label = "passed"
-            else:
-                label = "failed"
+            label = "failed"
         return query_id, task_solvable, is_solved, label, reason, not_hallucinate
         
     reference_model = args.reference_model

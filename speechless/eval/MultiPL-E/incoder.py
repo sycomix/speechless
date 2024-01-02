@@ -10,7 +10,7 @@ def strip_left_padding(output_tensor):
     the output will contain <|endoftext|> tokens on the left. This code strips those out.
     """
     start_index = 0
-    while output_tensor[start_index].item() == model.tokenizer.pad_token_id or output_tensor[start_index].item() == 2:
+    while output_tensor[start_index].item() in [model.tokenizer.pad_token_id, 2]:
         start_index += 1
     return output_tensor[start_index:]
 

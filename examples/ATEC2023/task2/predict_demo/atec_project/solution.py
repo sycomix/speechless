@@ -104,9 +104,8 @@ if __name__ == '__main__':
     input_file = '/home/admin/workspace/job/input/test.jsonl'
     with open(input_file, 'r') as f:
         for line in f:
-            test_data = []
             sample = json.loads(line)
-            test_data.append(sample)
+            test_data = [sample]
             result = solution.predicts(sample_list=test_data, params=params.copy())
             result = result[0]
             output_json = json.dumps(result, ensure_ascii=False).encode('utf8')

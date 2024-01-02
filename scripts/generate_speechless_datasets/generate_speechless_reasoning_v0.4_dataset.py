@@ -46,10 +46,10 @@ def load_airoboros_dataset():
         #   ]
     }
     selected_categories = []
-    for k, cats in experts.items():
+    for cats in experts.values():
         selected_categories.extend(cats)
 
-    print(f"Loading jondurbin/airoboros-2.2.1 ...")
+    print("Loading jondurbin/airoboros-2.2.1 ...")
     airoboros_dataset = datasets.load_dataset("json", data_files="/opt/local/datasets/jondurbin/airoboros-2.2.1/instructions.jsonl")['train']
     print(f"Loaded {len(airoboros_dataset)} samples from jondurbin/airoboros-2.2.1")
     total_samples = len(airoboros_dataset)
@@ -99,10 +99,10 @@ def load_airoboros_22_dataset():
         #   ]
     }
     selected_categories = []
-    for k, cats in experts.items():
+    for cats in experts.values():
         selected_categories.extend(cats)
 
-    print(f"Loading jondurbin/airoboros-2.2 ...")
+    print("Loading jondurbin/airoboros-2.2 ...")
     airoboros_dataset = datasets.load_dataset("json", data_files="/opt/local/datasets/jondurbin/airoboros-2.2/instructions.jsonl")['train']
     print(f"Loaded {len(airoboros_dataset)} samples from jondurbin/airoboros-2.2")
     total_samples = len(airoboros_dataset)
@@ -114,7 +114,7 @@ def load_airoboros_22_dataset():
 
 # ---------- Open-Orca/OpenOrca ----------
 def load_orca_dataset(train_data_path: str):
-    print(f"Loading Open-Orca/OpenOrca ...")
+    print("Loading Open-Orca/OpenOrca ...")
     ds = datasets.load_dataset(train_data_path)
     ds = ds['train']
     total_samples = len(ds)
@@ -126,30 +126,30 @@ def load_orca_dataset(train_data_path: str):
     ds = ds.rename_column('system_prompt', 'system')
     ds = ds.rename_column('question', 'instruction')
     # ds = ds.rename_column('response', 'response')
-    ds = ds.add_column('category', ['cot']  * len(ds)) 
+    ds = ds.add_column('category', ['cot']  * len(ds))
     ds = ds.add_column("skip_prompt_formatting", [False] * len(ds))
     return ds
 
 # ---------- garage-bAInd/Open-Platypus ----------
 def load_platypus_dataset(train_data_path: str):
-    print(f"Loading garage-bAInd/Open-Platypus ...")
+    print("Loading garage-bAInd/Open-Platypus ...")
     ds = datasets.load_dataset(train_data_path)
     ds = ds['train']
     total_samples = len(ds)
     print(f"Loaded {len(ds)} samples from garage-bAInd/Open-Platypus")
     ds = ds.remove_columns(['input'])
-    ds = ds.add_column('system', ['']  * len(ds)) 
+    ds = ds.add_column('system', ['']  * len(ds))
     # ds = ds.rename_column('instruction', 'instruction')
     ds = ds.rename_column('output', 'response')
-    ds = ds.add_column('category', ['platypus']  * len(ds)) 
+    ds = ds.add_column('category', ['platypus']  * len(ds))
     ds = ds.add_column("skip_prompt_formatting", [False] * len(ds))
     return ds
 
 # ---------- WizardLM/WizardLM_evol_instruct_V2_196k ----------
 def load_wizardlm_dataset(train_data_path: str):
-    print(f"Loading WizardLM/WizardLM_evol_instruct_V2_196k ...")
+    print("Loading WizardLM/WizardLM_evol_instruct_V2_196k ...")
     json_file = f"{train_data_path}/WizardLM_evol_instruct_V2_143k.json"
-    ds = datasets.load_dataset("json", data_files=json_file)['train']  
+    ds = datasets.load_dataset("json", data_files=json_file)['train']
     total_samples = len(ds)
     print(f"Loaded {len(ds)} samples from WizardLM/WizardLM_evol_instruct_V2_196k")
 
@@ -191,7 +191,7 @@ def load_wizardlm_dataset(train_data_path: str):
 
 # ---------- TokenBender/python_evol_instruct_51k ----------
 def load_tokenbender_dataset(train_data_path: str):
-    print(f"Loading TokenBender/python_evol_instruct_51k ...")
+    print("Loading TokenBender/python_evol_instruct_51k ...")
     json_file = f"{train_data_path}/tokenbender_python_evol_instruct_51k.jsonl"
     ds = datasets.load_dataset("json", data_files=json_file)['train']
     total_samples = len(ds)
@@ -208,7 +208,7 @@ def load_tinycodes_dataset(train_data_path: str):
     'programming_language', 'common_sense_topic', 'idx', 'response']
     Python, Java, JavaScript, C++, Rust, Go, Bash, Julia, relation database and SQL
     """
-    print(f"Loading nampdn-ai/tiny-codes ...")
+    print("Loading nampdn-ai/tiny-codes ...")
     ds = datasets.load_dataset(train_data_path)['train']
     # Python, Java, JavaScript, C++, Rust, Go, Bash, Julia, C#, TypeScript
     # selected_langs = ['Python', 'Java', 'JavaScript', 'C++', 'Rust', 'Go', 'Bash', 'Julia', 'relation database and SQL']
@@ -227,7 +227,7 @@ def load_tinycodes_dataset(train_data_path: str):
 
     ds = datasets.concatenate_datasets(ds_list)
 
-    ds = ds.rename_column('prompt', 'instruction')        
+    ds = ds.rename_column('prompt', 'instruction')
     tinycodes_column_names = [c for c in ds.column_names if c not in ['instruction', 'response']]
     ds = ds.remove_columns(tinycodes_column_names)
     # ds = ds.add_column('input', ['']  * len(ds))
@@ -312,7 +312,7 @@ def prepare_data(model_name_or_path, model_max_len):
     # # print(f"tinycodes_dataset: {tinycodes_dataset.column_names=}")
     #   [airoboros_dataset, orca_dataset, platypus_dataset, wizardlm_dataset, tokenbender_dataset, tinycodes_dataset])
 
-    print(f"Merging all datasets ...")
+    print("Merging all datasets ...")
     def _get_data_length(item):
         prompt = f"{tokenizer.bos_token}{item['instruction']}{item['response']}{tokenizer.eos_token}"
         return len(

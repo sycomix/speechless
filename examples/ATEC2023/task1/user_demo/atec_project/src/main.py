@@ -58,8 +58,10 @@ def main():
 
     # Log on each process the small summary:
     logger.warning(
-        f"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}"
-        + f"distributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}"
+        (
+            f"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}"
+            + f"distributed training: {training_args.local_rank != -1}, 16-bits training: {training_args.fp16}"
+        )
     )
     logger.info(f"Training/evaluation parameters {training_args}")
 
@@ -134,7 +136,7 @@ def main():
     prompt_column = data_args.prompt_column
     response_column = data_args.response_column
     history_column = data_args.history_column
-    
+
     # Temporarily set max_target_length for training.
     max_target_length = data_args.max_target_length
 
@@ -183,7 +185,7 @@ def main():
                 context_length = len(a_ids)
                 input_ids = a_ids + b_ids + [tokenizer.eos_token_id]
                 labels = [tokenizer.pad_token_id] * context_length + b_ids + [tokenizer.eos_token_id]
-                
+
                 pad_len = max_seq_length - len(input_ids)
                 input_ids = input_ids + [tokenizer.pad_token_id] * pad_len
                 labels = labels + [tokenizer.pad_token_id] * pad_len
@@ -194,7 +196,7 @@ def main():
                 model_inputs["labels"].append(labels)
 
         return model_inputs
-    
+
     def print_dataset_example(example):
         print("input_ids", example["input_ids"])
         print("inputs", tokenizer.decode(example["input_ids"]))
@@ -292,7 +294,7 @@ def main():
             rouge = Rouge()
             scores = rouge.get_scores(' '.join(hypothesis) , ' '.join(reference))
             result = scores[0]
-            
+
             for k, v in result.items():
                 score_dict[k].append(round(v["f"] * 100, 4))
             bleu_score = sentence_bleu([list(label)], list(pred), smoothing_function=SmoothingFunction().method3)
@@ -359,7 +361,7 @@ def main():
 
     if training_args.do_predict:
         logger.info("*** Predict ***")
-        
+
         predict_results = trainer.predict(predict_dataset, metric_key_prefix="predict", max_length=max_seq_length)
 
         metrics = predict_results.metrics
@@ -375,7 +377,7 @@ def main():
             if training_args.predict_with_generate:
                 print("prediction result =======", predict_results)
                 print("prediction dataset =======", predict_dataset[0])
-                
+
                 predictions = tokenizer.batch_decode(
                     predict_results.predictions, skip_special_tokens=True, clean_up_tokenization_spaces=True
                 )

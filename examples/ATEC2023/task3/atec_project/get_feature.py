@@ -36,8 +36,7 @@ def read_jsonl_file(file_path):
 
 
 def add_feature(input):
-    prefix = "请你帮我判断如下内容是人类撰写的还是机器生成的，内容如下《%s》，注意回复为该新闻是由人类撰写的或该新闻是由机器合成的。" % (input)
-    return prefix
+    return f"请你帮我判断如下内容是人类撰写的还是机器生成的，内容如下《{input}》，注意回复为该新闻是由人类撰写的或该新闻是由机器合成的。"
 
 
 if __name__ == "__main__":

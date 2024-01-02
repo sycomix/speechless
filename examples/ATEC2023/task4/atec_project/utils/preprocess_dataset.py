@@ -17,8 +17,7 @@ def get_args():
     parser.add_argument("--output_path", type=str, help="output dataset path", required=True)
     parser.add_argument("--output_name", type=str, help="output dataset name", required=True)
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def traffic_detection_preprocess(args, detection_task):

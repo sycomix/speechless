@@ -4,7 +4,7 @@ import argparse
 
 def check_result_file(p: Path, delete: bool):
     data = gunzip_json(p)
-    if data == None:
+    if data is None:
         print(f"Could not open {p}")
         if delete:
             p.unlink()

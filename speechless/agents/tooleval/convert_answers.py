@@ -12,7 +12,7 @@ for groups_dir in groups_dirs:
     print(method)
     groups_save_dir = os.path.join(save_dir,method)
     os.makedirs(groups_save_dir,exist_ok=True)
-    groups = [os.path.split(g)[1] for g in glob(groups_dir+'/*')]
+    groups = [os.path.split(g)[1] for g in glob(f'{groups_dir}/*')]
     full_answer = {}
     for g in groups:
         print(g)

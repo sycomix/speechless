@@ -55,7 +55,7 @@ def main(args):
                             else:
                                 question += f"### Response: {value}\n\n"
                         else:
-                            question += f"### Response: "
+                            question += "### Response: "
                             answer = value
                 else:
                     assert len(dialog) == 2
@@ -78,7 +78,7 @@ def main(args):
             fd.write(new_line + '\n')
     print(f"Saved {num_lines} samples to {output_file}.")
 
-    print(f"Sorting data ...")
+    print("Sorting data ...")
     dataset = load_dataset('json', data_files=output_file, split='train')
     print(f"Total {len(dataset)} samples.")
     dataset = dataset.sort('quality_score', reverse=True)
@@ -172,8 +172,7 @@ def get_args():
     parser.add_argument("--reward_model_path", type=str, default="/opt/local/llm_models/huggingface.co/OpenAssistant/reward-model-deberta-v3-large-v2")
     parser.add_argument("--input_file", type=str, default="/opt/local/datasets/speechless_data/speechless-magicoder-oss-evol-dataset.jsonl")
     parser.add_argument("--output_file", type=str)
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 if __name__ == "__main__":
     args = get_args()

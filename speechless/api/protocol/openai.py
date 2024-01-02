@@ -29,8 +29,11 @@ class CompletionParams:
         sampling_param_keys = ['max_tokens', 'temperature', 'top_p', 'stop', 
                                'n', 'best_of', 
                                'presence_penalty', 'frequency_penalty', 'logit_bias']
-        sampling_params = {k: getattr(self, k) for k in sampling_param_keys if getattr(self, k) is not None}
-        return sampling_params
+        return {
+            k: getattr(self, k)
+            for k in sampling_param_keys
+            if getattr(self, k) is not None
+        }
 
     @classmethod
     def from_request(cls, request_dict: Dict):

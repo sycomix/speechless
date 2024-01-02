@@ -14,9 +14,7 @@ def split_dataset(build_data, sampling=True):
         train_nb = int(min(MAX_SAMPLING_NUMBER, len(build_data)) * TRAINING_SAMPLE_RATIO)
     else:
         train_nb = int(len(build_data) * TRAINING_SAMPLE_RATIO)
-    train_data = build_data[:train_nb]
-
-    return train_data
+    return build_data[:train_nb]
 
 
 def write_dataset(dataset, output_path):
@@ -28,9 +26,7 @@ def write_dataset(dataset, output_path):
 
 
 def write_labels(labels, output_path):
-    label_dict = {}
-    for i, label in enumerate(labels):
-        label_dict[label] = i
+    label_dict = {label: i for i, label in enumerate(labels)}
     with open(output_path, "w", encoding="utf-8") as fin:
         json.dump(label_dict, fin, indent=4, separators=(',', ': '), ensure_ascii=False)
 
@@ -43,43 +39,39 @@ def build_dataset(path, file, is_train):
         pcap_data = build_pcap_data(os.path.join(files_path, pcap))
         build_data.extend(pcap_data)
 
-    if is_train is True:
-        train_data = split_dataset(build_data, sampling=True)
-    else:
-        train_data = build_data
-
-    return train_data
+    return (
+        split_dataset(build_data, sampling=True)
+        if is_train is True
+        else build_data
+    )
 
 
 def save_dataset(args, train_dataset):
-    write_dataset(train_dataset, os.path.join(args.output_path, args.output_name + "_train.json"))
+    write_dataset(
+        train_dataset,
+        os.path.join(args.output_path, f"{args.output_name}_train.json"),
+    )
 
 
 def build_td_text_dataset(traffic_data, label=None, task_name=None):
     """Building the text datasets of traffic detection task"""
 
-    if task_name == "EMD":
-        instruction = "以下为一段网络流量数据，请执行恶意流量识别任务："
-
-        output = "这段流量数据的类别为" + label + "。"
-
-    elif task_name == "BND":
+    if task_name == "BND":
         instruction = "以下为一段网络流量数据，请执行僵尸网络检测任务："
 
-        output = "这段流量数据的类别为" + label + "。"
+        output = f"这段流量数据的类别为{label}。"
+
+    elif task_name == "EMD":
+        instruction = "以下为一段网络流量数据，请执行恶意流量识别任务："
+
+        output = f"这段流量数据的类别为{label}。"
 
     elif task_name == "EVD":
         instruction = "以下为一段网络流量数据，请执行隧道行为识别任务："
 
-        output = "这段流量数据的类别为" + label + "。"
+        output = f"这段流量数据的类别为{label}。"
 
-    dataset = []
-    for data in traffic_data:
-        dataset.append(
-            {
-                "instruction": instruction + data,
-                "output": output
-            }
-        )
-
-    return dataset
+    return [
+        {"instruction": instruction + data, "output": output}
+        for data in traffic_data
+    ]

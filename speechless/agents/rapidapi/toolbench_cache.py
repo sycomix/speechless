@@ -23,10 +23,7 @@ from collections import defaultdict
 def compare_dict(dict1, dict2):
     if dict1.keys() != dict2.keys():
         return False
-    for key in dict1.keys():
-        if dict1[key] != dict2[key]:
-            return False
-    return True
+    return all(dict1[key] == dict2[key] for key in dict1.keys())
 
 class ToolBenchCache:
     def __init__(self, cache_file:str):
@@ -74,8 +71,7 @@ class ToolBenchCache:
         return toolbench_cache
 
     def _get_payload_key(self, payload):
-        key = f"{payload['category']}.{payload['tool_name']}.{payload['api_name']}.{payload['strip']}"
-        return key
+        return f"{payload['category']}.{payload['tool_name']}.{payload['api_name']}.{payload['strip']}"
         
     def cache_query_response(self, payload, response, status_code):
         payload_key = self._get_payload_key(payload)
@@ -140,7 +136,10 @@ def toolbench_query_api(payload, service_url:str, toolbench_key:str = None, time
         response = response.json()
     except:
         print(response)
-        response = json.dumps({"error": f"request invalid, data error", "response": ""}, ensure_ascii=False)
+        response = json.dumps(
+            {"error": "request invalid, data error", "response": ""},
+            ensure_ascii=False,
+        )
         cache_query_response(response, 12)
         return response, 12
 

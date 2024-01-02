@@ -13,9 +13,9 @@ class BaseLLM(ABC):
         """
         create a base working dir for a certain model
         """
-        name_digest = str(int(hashlib.md5(model_name.encode("utf-8")).hexdigest(), 16))[
-            0:12
-        ]
+        name_digest = str(
+            int(hashlib.md5(model_name.encode("utf-8")).hexdigest(), 16)
+        )[:12]
         dir_name = "_".join([model_family, name_digest])
         return os.path.join(models_dir, dir_name)
 
@@ -32,9 +32,6 @@ class BaseLLM(ABC):
         """
         asynchronously generate text using LLM based on an input prompt
         """
-        # avoid mypy error https://github.com/python/mypy/issues/5070
-        if False:  # pylint: disable=using-constant-test
-            yield
 
     @abstractmethod
     def embeddings(self, text: str) -> List[float]:

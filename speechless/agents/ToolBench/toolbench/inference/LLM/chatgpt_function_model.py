@@ -68,7 +68,7 @@ class ChatGPTFunction:
         for message in self.conversation_history:
             print_obj = f"{message['role']}: {message['content']} "
             if "function_call" in message.keys():
-                print_obj = print_obj + f"function_call: {message['function_call']}"
+                print_obj = f"{print_obj}function_call: {message['function_call']}"
             print_obj += ""
             print(
                 colored(

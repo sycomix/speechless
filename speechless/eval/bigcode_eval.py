@@ -34,15 +34,13 @@ class MultiChoice:
 
     # Simple wildcard support (linux filename patterns)
     def __contains__(self, values):
-        for value in values.split(","):
-            if len(fnmatch.filter(self.choices, value)) == 0:
-                return False
-
-        return True
+        return all(
+            len(fnmatch.filter(self.choices, value)) != 0
+            for value in values.split(",")
+        )
 
     def __iter__(self):
-        for choice in self.choices:
-            yield choice
+        yield from self.choices
 
 BIGCODE_TASKS="humaneval,multiple-java,multiple-js,multiple-cpp,multiple-rs,multiple-go,multiple-sh,multiple-jl,multiple-swift,multiple-php,multiple-d,multiple-lua,multiple-r,multiple-rkt"
 
@@ -351,7 +349,7 @@ def main():
         #     print("Not setting pad_token to eos_token")
         #     pass
 
-        print(f"---------- Original tokens----------")
+        print("---------- Original tokens----------")
         print(f"{tokenizer.pad_token=},{tokenizer.pad_token_id=}")
         print(f"{tokenizer.unk_token=},{tokenizer.unk_token_id=}")
         print(f"{tokenizer.bos_token=},{tokenizer.bos_token_id=}")
@@ -375,7 +373,7 @@ def main():
             if tokenizer.pad_token_id is None:
                 tokenizer.pad_token_id = 0 # tokenizer.eos_token_id
                 tokenizer.pad_token = tokenizer._convert_id_to_token(tokenizer.pad_token_id) #tokenizer.eos_token
-        print(f"---------- Fixed tokens ----------")
+        print("---------- Fixed tokens ----------")
         print(f"{tokenizer.pad_token=},{tokenizer.pad_token_id=}")
         # print(f"{tokenizer.unk_token=},{tokenizer.unk_token_id=}")
         print(f"{tokenizer.bos_token=},{tokenizer.bos_token_id=}")
@@ -401,19 +399,17 @@ def main():
             # args.save_generations_path = f"{args.eval_results_dir}/bigcode_{task}_generations.json"
             args.save_generations_path = f"{args.eval_results_dir}/generations_{task}_{os.path.basename(args.model)}.json"
             pbar.set_description(f"{task}")
-            # if args.generation_only:
-            if True:
-                if accelerator.is_main_process:
-                    print("generation mode only")
-                generations, references = evaluator.generate_text(task)
-                if accelerator.is_main_process:
-                    with open(args.save_generations_path, "w") as fp:
-                        json.dump(generations, fp, ensure_ascii=False, indent=2)
-                        print(f"generations were saved at {args.save_generations_path}")
-                    if args.save_references:
-                        with open("references.json", "w") as fp:
-                            json.dump(references, fp)
-                            print("references were saved")
+            if accelerator.is_main_process:
+                print("generation mode only")
+            generations, references = evaluator.generate_text(task)
+            if accelerator.is_main_process:
+                with open(args.save_generations_path, "w") as fp:
+                    json.dump(generations, fp, ensure_ascii=False, indent=2)
+                    print(f"generations were saved at {args.save_generations_path}")
+                if args.save_references:
+                    with open("references.json", "w") as fp:
+                        json.dump(references, fp)
+                        print("references were saved")
             if args.allow_code_execution:
                 results[task] = evaluator.evaluate(task)
                 results["config"] = vars(args)

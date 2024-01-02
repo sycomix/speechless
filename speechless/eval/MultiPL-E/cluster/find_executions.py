@@ -40,8 +40,9 @@ def process_experiment(host: Path, container: Path, dir: Path):
 
         completions_path_for_container = container / completions_path.relative_to(host)
 
-        results_path = completions_path.parent / (
-            completions_path.name[:-8] + ".results.json.gz"
+        results_path = (
+            completions_path.parent
+            / f"{completions_path.name[:-8]}.results.json.gz"
         )
 
         if not results_path.exists():
