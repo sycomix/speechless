@@ -141,16 +141,12 @@ class OpenAICompletion:
             user_prompt = prompt_template.split("### Input:")[1].split("### Response:")[0]
             assistant_prompt = prompt_template.split("### Response:")[1]
 
-            if prompt_args:
-                user_prompt = user_prompt.format(**prompt_args)
-            else:
-                user_prompt = user_prompt
-
-            messages = []
-            messages.append({"role": "system", "content": sys_prompt})
-            messages.append({"role": "user", "content": user_prompt})
-            messages.append({"role": "assistant", "content": assistant_prompt})
-
+            user_prompt = user_prompt.format(**prompt_args) if prompt_args else user_prompt
+            messages = [
+                {"role": "system", "content": sys_prompt},
+                {"role": "user", "content": user_prompt},
+                {"role": "assistant", "content": assistant_prompt},
+            ]
             function_to_run = openai_chat_completion
             prompt_or_messages = messages
             tokens_used = titoken_count_tokens(model_name=self.model_name, messages=messages)
@@ -243,9 +239,9 @@ def batch_completion(model_name: str,
     """
     # output_completion_prompts = []
 
-    real_completion_prompts = []    
+    real_completion_prompts = []
     for n, completion_prompt in enumerate(input_completion_prompts):
-        for i in range(completion_limit):
+        for _ in range(completion_limit):
             real_completion_prompt = copy.deepcopy(completion_prompt)
             real_completion_prompts.append((n, real_completion_prompt))
     real_completion_prompts = random.sample(real_completion_prompts, len(real_completion_prompts))
@@ -268,12 +264,8 @@ def batch_completion(model_name: str,
                     )
                 )
 
-        # wait for all the queries to finish
-        # for each query, save the results into the output dataframe
-        total_tried = 0
         total_correct = 0
         for f in (pbar := tqdm(as_completed(futures), total=len(futures))):
-            total_tried += 1
             i = futures.index(f)
             i_n = real_completion_prompts[i][0]
             completion_prompt = input_completion_prompts[i_n]
@@ -300,11 +292,6 @@ def batch_completion(model_name: str,
             #     pass
             #     # total_correct += 1
             completion_prompt.result_dicts.append(result_dict)
-
-            # output_completion_prompts.append((i_n, completion_prompt))
-            # pbar.set_description(
-            #     f"Correct so far: {total_correct}/{total_tried} ({100*total_correct/total_tried:.2f}%)"
-            # )
 
     return input_completion_prompts
 
@@ -338,7 +325,7 @@ def default_argument_parser():
     return parser
 
 def sampling_params_from_args(args):
-    sampling_params={
+    return {
         'temperature': args.temperature,
         'top_p': args.top_p,
         # 'top_k': args.top_k,
@@ -349,15 +336,12 @@ def sampling_params_from_args(args):
         'stop': args.stop.split(",") if args.stop else [],
     }
 
-    return sampling_params
-
 def get_args():
     parser = default_argument_parser()
 
     parser.add_argument("-f", "--prompt_file", type=str, required=True, help="The path to the file containing the prompt template.")
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def build_completion_prompts(dataset, prompt_template, sampling_params):

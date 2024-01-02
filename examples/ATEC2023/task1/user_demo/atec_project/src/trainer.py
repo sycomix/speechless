@@ -25,28 +25,28 @@ class PrefixTrainer(Trainer):
         logger.info(f"Saving model checkpoint to {output_dir}")
         # Save a trained model and configuration using `save_pretrained()`.
         # They can then be reloaded using `from_pretrained()`
-        if not isinstance(self.model, PreTrainedModel):
-            if isinstance(unwrap_model(self.model), PreTrainedModel):
-                if state_dict is None:
-                    state_dict = self.model.state_dict()
-                unwrap_model(self.model).save_pretrained(output_dir, state_dict=state_dict)
-            else:
-                logger.info("Trainer.model is not a `PreTrainedModel`, only saving its state dict.")
-                if state_dict is None:
-                    state_dict = self.model.state_dict()
-                torch.save(state_dict, os.path.join(output_dir, WEIGHTS_NAME))
-        else:
+        if isinstance(self.model, PreTrainedModel):
             if self.save_changed:
                 print("Saving PrefixEncoder")
                 state_dict = self.model.state_dict()
-                filtered_state_dict = {}
-                for k, v in self.model.named_parameters():
-                    if v.requires_grad:
-                        filtered_state_dict[k] = state_dict[k]
+                filtered_state_dict = {
+                    k: state_dict[k]
+                    for k, v in self.model.named_parameters()
+                    if v.requires_grad
+                }
                 self.model.save_pretrained(output_dir, state_dict=filtered_state_dict)
             else:
                 print("Saving the whole model")
                 self.model.save_pretrained(output_dir, state_dict=state_dict)
+        elif isinstance(unwrap_model(self.model), PreTrainedModel):
+            if state_dict is None:
+                state_dict = self.model.state_dict()
+            unwrap_model(self.model).save_pretrained(output_dir, state_dict=state_dict)
+        else:
+            logger.info("Trainer.model is not a `PreTrainedModel`, only saving its state dict.")
+            if state_dict is None:
+                state_dict = self.model.state_dict()
+            torch.save(state_dict, os.path.join(output_dir, WEIGHTS_NAME))
         if self.tokenizer is not None:
             self.tokenizer.save_pretrained(output_dir)
 

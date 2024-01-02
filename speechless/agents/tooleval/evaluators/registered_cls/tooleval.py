@@ -29,7 +29,7 @@ class OpenAIEvaluator(ToolEvalEvaluator):
             self.conversation_template.append(message)
             
 
-    def openai_completions(self,task_description:Dict,answers:Dict)->int:
+    def openai_completions(self,task_description:Dict,answers:Dict) -> int:
         conversation = deepcopy(self.conversation_template)
         for msg in conversation:
             if msg['role'] == 'user':
@@ -37,13 +37,13 @@ class OpenAIEvaluator(ToolEvalEvaluator):
                     task_description=json.dumps(task_description),
                     answers=json.dumps(answers)
                     )
-        
+
         res = self.opr(messages=conversation,**self.eval_config['completions_kwargs'])
-    
-        prefers = []
-        for choice in res.choices:
-            prefers.append(int(json.loads(choice.message.function_call.arguments)['preference']))
-            
+
+        prefers = [
+            int(json.loads(choice.message.function_call.arguments)['preference'])
+            for choice in res.choices
+        ]
         return random.choice(prefers)
     
 @register_evaluator
@@ -52,19 +52,20 @@ class OpenAINormalizedEvaluator(ToolEvalEvaluator):
                  cfg_path: str = None,
                 ):
         super().__init__(cfg_path)
-        
+
         self.opr = OpenaiPoolRequest(self.eval_config['apis_json'])
-        
+
         # setting up the function templates
         self.parsed_function_templates = {}
         for function in re.findall(r"<function>(.*?)</function>", self.template,re.DOTALL):
             name = re.findall(r"<name>(.*?)</name>",function,re.DOTALL)[0]
             description = re.findall(r"<description>(.*?)</description>",function,re.DOTALL)[0]
             self.parsed_function_templates[name] = description
-            
-        self.functions = {}
-        for function in self.eval_config['completions_kwargs']['functions']:
-            self.functions[function['name']] = function
+
+        self.functions = {
+            function['name']: function
+            for function in self.eval_config['completions_kwargs']['functions']
+        }
     
     @retry(stop=stop_after_attempt(3),reraise=True)
     def function_call(self,
@@ -106,12 +107,9 @@ class OpenAINormalizedEvaluator(ToolEvalEvaluator):
             ret['content'] = dict(res.choices[0].message).get('content','')
         return ret
     
-    def select_best_final_answer(self,query,final_answers:List[str])->int:
+    def select_best_final_answer(self,query,final_answers:List[str]) -> int:
         hashed_ans = list(map(hash,final_answers))
-        all_same = True
-        for item in hashed_ans[1:]:
-            if item != hashed_ans[0]:
-                all_same = False
+        all_same = all(item == hashed_ans[0] for item in hashed_ans[1:])
         if all_same:
             return random.choice(range(len(final_answers)))
         while True:

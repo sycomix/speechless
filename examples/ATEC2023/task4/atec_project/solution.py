@@ -20,10 +20,11 @@ class AlgSolution:
             self.model = AutoModel.from_pretrained(model_name, config=config, trust_remote_code=True)
             prefix_state_dict = torch.load(
                 os.path.join(ptuning_path, "pytorch_model.bin"), map_location='cpu')
-            new_prefix_state_dict = {}
-            for k, v in prefix_state_dict.items():
-                if k.startswith("transformer.prefix_encoder."):
-                    new_prefix_state_dict[k[len("transformer.prefix_encoder."):]] = v
+            new_prefix_state_dict = {
+                k[len("transformer.prefix_encoder.") :]: v
+                for k, v in prefix_state_dict.items()
+                if k.startswith("transformer.prefix_encoder.")
+            }
             self.model.transformer.prefix_encoder.load_state_dict(new_prefix_state_dict)
             self.model = self.model.half().cuda()
             self.model.transformer.prefix_encoder.float()
@@ -43,13 +44,12 @@ class AlgSolution:
             data = (binascii.hexlify(bytes(packet_data)))
             packet_string = data.decode()
             hex_stream.append(packet_string[self.HEX_PACKET_START_INDEX:min(len(packet_string), self.MAX_PACKET_LENGTH_IN_FLOW)])
-        flow_data = "<pck>" + "<pck>".join(hex_stream)
-        return flow_data
+        return "<pck>" + "<pck>".join(hex_stream)
 
     def pre_process(self, input_data: Dict, dataset_root) -> str:
-        prompt = input_data['instruction'] + \
-                self.build_pcap_data(dataset_root + '/test/' + input_data['path'])
-        return prompt
+        return input_data['instruction'] + self.build_pcap_data(
+            f'{dataset_root}/test/' + input_data['path']
+        )
 
     def generate(self, prompt: str) -> str:
         response, _ = self.model.chat(self.tokenizer, prompt, history=[])

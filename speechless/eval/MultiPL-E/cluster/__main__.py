@@ -33,8 +33,9 @@ def process_experiment(experiment_path: Path) -> List[str]:
         if completions_path.name.endswith(".results.json.gz"):
             continue
 
-        results_path = completions_path.parent / (
-            completions_path.name[:-8] + ".results.json.gz"
+        results_path = (
+            completions_path.parent
+            / f"{completions_path.name[:-8]}.results.json.gz"
         )
         completions_json = gunzip_json(completions_path)
         results_json = gunzip_json(results_path)
@@ -46,7 +47,9 @@ def process_experiment(experiment_path: Path) -> List[str]:
             pass
         elif len(results_json["results"]) >= len(completions_json["completions"]):
             continue
-        completions_path_for_container = "/dataset/" + completions_path.parent.name + "/" + completions_path.name
+        completions_path_for_container = (
+            f"/dataset/{completions_path.parent.name}/{completions_path.name}"
+        )
 
         results.append(completions_path_for_container)
 
@@ -140,7 +143,7 @@ def single_problem_pass_k(args):
         f.write(
             "dataset,lang,problem,model,variation,pass@1,n(t=0.2),pass@10,n(t=0.8),pass@100\n"
         )
-        exps = list((exp for exp in all_experiments() if exp.temp == "0.2"))
+        exps = [exp for exp in all_experiments() if exp.temp == "0.2"]
         with ProcessPoolExecutor() as executor:
             for results in tqdm.tqdm(
                 executor.map(single_problem_pass_k_for_experiment, exps),

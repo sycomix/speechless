@@ -12,7 +12,10 @@ def build_awq(args):
 
     quant_path = args.quant_path
     if quant_path is None:
-        quant_path = os.path.dirname(model_path) + "/" + os.path.basename(model_path) + f"-w{w_bit}g{group_size}-awq"
+        quant_path = (
+            f"{os.path.dirname(model_path)}/{os.path.basename(model_path)}"
+            + f"-w{w_bit}g{group_size}-awq"
+        )
 
     # Load model
     # NOTE: pass safetensors=True to load safetensors
@@ -21,7 +24,7 @@ def build_awq(args):
     tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
 
     # Quantize
-    print(f"Quantizing model ......")
+    print("Quantizing model ......")
     model.quantize(tokenizer, quant_config=quant_config)
 
     # Save quantized model
@@ -38,8 +41,7 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_path', type=str, default=None, required=True)
     parser.add_argument('--quant_path', type=str, default=None)
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 if __name__ == '__main__':
     args = get_args()

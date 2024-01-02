@@ -64,8 +64,10 @@ def main():
 
     # Log on each process the small summary:
     logger.warning(
-        f"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}"
-        + f"distributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}"
+        (
+            f"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}"
+            + f"distributed training: {training_args.local_rank != -1}, 16-bits training: {training_args.fp16}"
+        )
     )
     logger.info(f"Training/evaluation parameters {training_args}")
 
@@ -123,7 +125,7 @@ def main():
 
     # Get the column names for input/target.
     prompt_column = data_args.prompt_column
-    
+
     def preprocess_function(examples):
         max_seq_length = data_args.max_length
 
@@ -151,34 +153,36 @@ def main():
                     input_ids += [eos_id]
                     labels += [eos_id]
                     turn_idx += 1
-            
+
             input_ids = tokenizer.encode('') + input_ids #add gmask bos 
             total_len += len(input_ids)
             labels =  [-100] * 2 + labels# #add padding
             pad_len = max_seq_length - len(input_ids)
-            input_ids = input_ids + [eos_id] * pad_len 
+            input_ids = input_ids + [eos_id] * pad_len
             labels = labels + [-100] * pad_len
-            if not any(x > -100 for x in labels[2:]) or "\n\n答" not in conversation:
+            if (
+                all(x <= -100 for x in labels[2:])
+                or "\n\n答" not in conversation
+            ):
                 filter_nums += 1
                 continue
             # print(filter_nums)
             if len(input_ids) != max_seq_length or len(labels) != max_seq_length:
                 filter_nums += 1
                 continue
-            
+
             model_inputs["input_ids"].append(input_ids)
             model_inputs["labels"].append(labels)
         print("average length ===", total_len / len(examples[prompt_column]))
-            #print('filter_nums {} filter_ratio {} sum {}'.format(filter_nums, filter_nums/len(examples[prompt_column]),len(examples[prompt_column])))
         return model_inputs
-    
+
     def print_dataset_example(example):
         print("exampe ==========", example)
         print("input_ids",example["input_ids"])
         print("inputs", tokenizer.decode(example["input_ids"]))
         print("label_ids", example["labels"])
         print("labels", tokenizer.decode([i for i in example["labels"] if i != -100]))
-    
+
 
     if training_args.do_train:
         if "train" not in raw_datasets:
@@ -267,7 +271,7 @@ def main():
             rouge = Rouge()
             scores = rouge.get_scores(' '.join(hypothesis) , ' '.join(reference))
             result = scores[0]
-            
+
             for k, v in result.items():
                 score_dict[k].append(round(v["f"] * 100, 4))
             bleu_score = sentence_bleu([list(label)], list(pred), smoothing_function=SmoothingFunction().method3)
@@ -322,7 +326,7 @@ def main():
 
     # Evaluation
     results = {}
-    max_seq_length = data_args.max_length 
+    max_seq_length = data_args.max_length
     if training_args.do_eval:
         logger.info("*** Evaluate ***")
         metrics = trainer.evaluate(metric_key_prefix="eval", do_sample=True, top_p=0.7, max_length=max_seq_length, temperature=0.95)

@@ -38,33 +38,34 @@ class AlgSolution():
         return True
     def load_model(self, model_path: str, params: Dict, **kwargs) -> bool:
 
-            tokenizer = AutoTokenizer.from_pretrained(self.base_model_dir, trust_remote_code=True)
-            config = AutoConfig.from_pretrained(self.base_model_dir, trust_remote_code=True, pre_seq_len=128)
-            model = AutoModel.from_pretrained(self.base_model_dir, config=config, trust_remote_code=True)
+        tokenizer = AutoTokenizer.from_pretrained(self.base_model_dir, trust_remote_code=True)
+        config = AutoConfig.from_pretrained(self.base_model_dir, trust_remote_code=True, pre_seq_len=128)
+        model = AutoModel.from_pretrained(self.base_model_dir, config=config, trust_remote_code=True)
             # /mnt/data/xiaoyong/ATEC/run/ChatGLM2-6B/output/subcot-chatglm2-6b-pt-128-2e-2/checkpoint-3000
-            CHECKPOINT_PATH = model_path + '/checkpoint-10/'
-            prefix_state_dict = torch.load(os.path.join(CHECKPOINT_PATH, "pytorch_model.bin"))
-            new_prefix_state_dict = {}
-            for k, v in prefix_state_dict.items():
-                if k.startswith("transformer.prefix_encoder."):
-                    new_prefix_state_dict[k[len("transformer.prefix_encoder."):]] = v
-            model.transformer.prefix_encoder.load_state_dict(new_prefix_state_dict)
-            # model = model.quantize(4)
-            model = model.cuda()
-            model = model.eval()
+        CHECKPOINT_PATH = f'{model_path}/checkpoint-10/'
+        prefix_state_dict = torch.load(os.path.join(CHECKPOINT_PATH, "pytorch_model.bin"))
+        new_prefix_state_dict = {
+            k[len("transformer.prefix_encoder.") :]: v
+            for k, v in prefix_state_dict.items()
+            if k.startswith("transformer.prefix_encoder.")
+        }
+        model.transformer.prefix_encoder.load_state_dict(new_prefix_state_dict)
+        # model = model.quantize(4)
+        model = model.cuda()
+        model = model.eval()
 
-            self.tokenizer = tokenizer
-            self.model = model
+        self.tokenizer = tokenizer
+        self.model = model
 
-            """从本地加载模型
+        """从本地加载模型
             Args:
             model_path (str): 本地模型路径
             params (Dict): 模型输入参数。默认为conf/default.json
             Returns:
             bool: True 成功; False 失败
             """
-            # self.model = load_from_trained_model()
-            return True
+        # self.model = load_from_trained_model()
+        return True
     def predicts(self, sample_list: List[Dict], **kwargs) -> List[Dict]:
             """"
             批量预测

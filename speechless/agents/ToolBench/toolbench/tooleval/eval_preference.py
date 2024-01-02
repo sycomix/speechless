@@ -55,31 +55,31 @@ def get_pass_rate_results(filename: str) -> dict:
     for line in csv_reader:
         if line_cnt == 0:
             for index, item in enumerate(line):
-                if item == "query":
-                    query_index = index
-                elif item == "solvable":
-                    solvable_index = index
-                elif item == "available_tools":
+                if item == "available_tools":
                     atools_index = index
-                elif item == "model_intermediate_steps":
-                    mid_steps_index = index
+                elif item == "is_solved":
+                    is_solved_index = index
                 elif item == "model":
                     modelname_index = index
                 elif item == "model_final_step":
                     final_step_index = index
-                elif item == "is_solved":
-                    is_solved_index = index
+                elif item == "model_intermediate_steps":
+                    mid_steps_index = index
+                elif item == "not_hallucinate":
+                    not_hallucinate_index = index
                 elif item == "pass_rate_label":
                     machine_label_index = index
+                elif item == "query":
+                    query_index = index
                 elif item == "query_id":
                     query_id_index = index
                 elif item == "reason":
                     reason_index = index
-                elif item == "not_hallucinate":
-                    not_hallucinate_index = index
+                elif item == "solvable":
+                    solvable_index = index
                 else:
                     print(f"Unrecognized item: {item}")
-                        
+
         line_cnt = 1
         query = line[query_index]
         query_id = line[query_id_index]
@@ -107,23 +107,23 @@ def write_results(filename:str, prefer_dict: dict, reference_model: str, output_
     with open(filename, 'w', newline='') as file:
         writer = csv.writer(file, delimiter="\t")
         writer.writerow(["query", "available_tools", "ref_model_intermediate_steps", "ref_model_final_step", "output_model_intermediate_steps", "output_model_final_step", "preference_label", "query_id", "ref_model", "output_model"])
-    
-        for query_id in prefer_dict:
+
+        for query_id, value in prefer_dict.items():
             ref_example = reference_examples[query_id]
             output_example = output_examples[query_id]
-            tool_names = []
-            for tool_dict in ref_example['available_tools']:
-                tool_name = tool_dict["name"]
-                tool_names.append(tool_name)
+            tool_names = [
+                tool_dict["name"]
+                for tool_dict in ref_example['available_tools']
+            ]
             ref_steps, ref_final_step = get_steps(ref_example)
             output_steps, output_final_step = get_steps(output_example)
 
-            if prefer_dict[query_id][reference_model] > prefer_dict[query_id][output_model]:
+            if value[reference_model] > prefer_dict[query_id][output_model]:
                 preference = 1
             elif prefer_dict[query_id][reference_model] < prefer_dict[query_id][output_model]:
                 preference = 2
             else:
-                preference = 3     
+                preference = 3
             writer.writerow([ref_example['query'], str(tool_names), ref_steps, ref_final_step, output_steps, output_final_step, str(preference), query_id, reference_model, output_model])
     return None
 

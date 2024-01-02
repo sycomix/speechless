@@ -20,13 +20,13 @@ def merge_peft_adapters(base_model_name_or_path, peft_model_path, merged_model_n
 
     print(f"Loading peft model from {peft_model_path} ...")
     model = PeftModel.from_pretrained(base_model, peft_model_path)
-    print(f"Merging ...")
+    print("Merging ...")
     model = model.merge_and_unload()
 
     tokenizer = AutoTokenizer.from_pretrained(base_model_name_or_path, trust_remote_code=True)
 
     if push_to_hub:
-        print(f"Saving to hub ...")
+        print("Saving to hub ...")
         model.push_to_hub(merged_model_name_or_path, use_temp_dir=False, private=True)
         tokenizer.push_to_hub(merged_model_name_or_path, use_temp_dir=False, private=True)
     else:

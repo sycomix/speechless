@@ -74,13 +74,13 @@ class BaseEvaluator:
         """
         answers_processed = [process_answer(ans) for ans in answers]
         available_tools = process_tools(available_tools)
-        
+
         def shuffle_run() -> int:
             indexs = list(range(len(answers_processed)))
             random.shuffle(indexs)
-            
+
             answers_projected = [answers[idx] for idx in indexs]
-            
+
             preferred_index = self.fn_completions(
                 {
                     'query':query,
@@ -93,12 +93,11 @@ class BaseEvaluator:
             if preferred_index in indexs:
                 return indexs.index(preferred_index)
             raise ValueError(f'Preferred index {preferred_index} is invalid!')
-        
+
         if not multisample:
             return shuffle_run()
-        else:
-            prefers = [shuffle_run() for _ in range(sample_n)]
-            return prefers
+        prefers = [shuffle_run() for _ in range(sample_n)]
+        return prefers
 
 @register_evaluator
 class ToolEvalEvaluator(BaseEvaluator):

@@ -54,11 +54,7 @@ decontaminate_suffix = "_decontaminate"
 def resp_to_results(
     process_res_queue, task_dict, docs, decontaminate, overlaps, bootstrap_iters=100000, write_out_info=None
 ):
-    if write_out_info is None:
-        write_out = False
-    else:
-        write_out = True
-
+    write_out = write_out_info is not None
     results = collections.defaultdict(dict)
     vals = collections.defaultdict(list)
 
@@ -99,7 +95,7 @@ def resp_to_results(
         )
 
         if stderr is not None:
-            results[task_name][metric + "_stderr"] = stderr(items)
+            results[task_name][f"{metric}_stderr"] = stderr(items)
 
     return results
 
@@ -419,8 +415,8 @@ def make_table(result_dict):
             if m.endswith("_stderr"):
                 continue
 
-            if m + "_stderr" in dic:
-                se = dic[m + "_stderr"]
+            if f"{m}_stderr" in dic:
+                se = dic[f"{m}_stderr"]
                 values.append([k, version, m, "%.4f" % v, "±", "%.4f" % se])
             else:
                 values.append([k, version, m, "%.4f" % v, "", ""])
@@ -487,7 +483,7 @@ def summarize_results(json_data):
 
     open_llm_score = (arc_acc_norm + hellaswag_acc_norm + mmlu_acc + truthfullqa_mc2 + winoground_acc + gsm8k_acc + drop_f1) / 7
 
-    summary = {
+    return {
         'ARC (acc_norm)': arc_acc_norm,
         'HellaSwag (acc_norm)': hellaswag_acc_norm,
         'MMLU (acc)': mmlu_acc,
@@ -497,8 +493,6 @@ def summarize_results(json_data):
         'DROP (f1)': drop_f1,
         'Open LLM Score': open_llm_score,
     }
-
-    return summary
 
 
 def do_lmeval(
@@ -618,7 +612,7 @@ def do_lmeval(
         if isinstance(model, str):
             model_name = model
         elif isinstance(model, transformers.PreTrainedModel):
-            model_name = "pretrained=" + model.config._name_or_path
+            model_name = f"pretrained={model.config._name_or_path}"
         results["config"] = {
             "model": model_name,
             "model_args": model_args,
@@ -646,15 +640,14 @@ class MultiChoice:
 
     # Simple wildcard support (linux filename patterns)
     def __contains__(self, values):
-        for value in values.split(","):
-            if len(fnmatch.filter(self.choices, value)) == 0 and not _is_json_task(value):
-                return False
-
-        return True
+        return not any(
+            len(fnmatch.filter(self.choices, value)) == 0
+            and not _is_json_task(value)
+            for value in values.split(",")
+        )
 
     def __iter__(self):
-        for choice in self.choices:
-            yield choice
+        yield from self.choices
 
 
 openllm_tasks = [

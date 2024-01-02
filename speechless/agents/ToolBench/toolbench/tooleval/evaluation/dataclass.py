@@ -46,7 +46,9 @@ class ExecutionNode(BaseModel):
     def __eq__(self, other) -> bool:
         if isinstance(other,ExecutionNode):
             return self.node_id == other.node_id
-        raise NotImplementedError('Unsupported operation between {} and {}'.format(type(self),type(other)))
+        raise NotImplementedError(
+            f'Unsupported operation between {type(self)} and {type(other)}'
+        )
     
     def __str__(self) -> str:
         return str(self.node_id)
@@ -57,7 +59,9 @@ class DirectedEdge(BaseModel):
     def __eq__(self, other) -> bool:
         if isinstance(other,DirectedEdge):
             return self.edge_id == other.edge_id
-        raise NotImplementedError('Unsupported operation between {} and {}'.format(type(self),type(other)))
+        raise NotImplementedError(
+            f'Unsupported operation between {type(self)} and {type(other)}'
+        )
     
     def __str__(self) -> str:
         return str(self.edge_id)
@@ -72,23 +76,25 @@ class ExecutionGraph(BaseModel):
         all_start_nodes = [node.node_id for node in self.nodes.values() if node.in_degree == 0]
         all_visited_nodes = set()
         for node in all_start_nodes:
-            def dfs(node:ExecutionNode)->Dict[Any,Any]:
+            def dfs(node:ExecutionNode) -> Dict[Any,Any]:
                 if node.node_id in all_visited_nodes:
                     return None
                 all_visited_nodes.add(node.node_id)
-                node_json={
-                    'role':node.role,
-                    'message':node.message if node.role != 'system' and node.role !='user' else '',
-                    'next':[]
+                node_json = {
+                    'role': node.role,
+                    'message': node.message
+                    if node.role not in ['system', 'user']
+                    else '',
+                    'next': [],
                 }
                 for next_node in self.get_adjacent_node(node):
                     next_node_dict = dfs(self.nodes[next_node])
                     if next_node_dict is not None:
                         node_json['next'].append(next_node_dict)
                 return node_json
-            
+
             data.append(dfs(self.nodes[node]))
-        
+
         return data
     
     def reduce_graph_to_sequence(self):
@@ -173,10 +179,7 @@ class ExecutionGraph(BaseModel):
         return len(self.nodes.keys())
     @property
     def edge_count(self):
-        count = 0
-        for k,d in self.edges.items():
-            count += len(d.keys())
-        return count
+        return sum(len(d.keys()) for k, d in self.edges.items())
     
     def set_init_node(self,node:Union[GID,ExecutionNode]):
         if isinstance(node,ExecutionNode):
@@ -209,11 +212,10 @@ class ExecutionGraph(BaseModel):
             self.edges[from_node] = {}
         if edge is None:
             self.edges[from_node][to_node] = DirectedEdge()
+        elif isinstance(edge,DirectedEdge):
+            self.edges[from_node][to_node] = edge
         else:
-            if isinstance(edge,DirectedEdge):
-                self.edges[from_node][to_node] = edge
-            else:
-                raise TypeError('edge must be instance of DirectedEdge!')
+            raise TypeError('edge must be instance of DirectedEdge!')
         self.nodes[to_node].in_degree += 1
         self.nodes[from_node].out_degree +=1
 
@@ -260,12 +262,11 @@ class ExecutionGraph(BaseModel):
         if len(key)==0:
             self.add_node(value)
         elif isinstance(key, GID):
-            if isinstance(value,ExecutionNode):
-                value.node_id = key
-                self.nodes[key] = value
-            else:
+            if not isinstance(value, ExecutionNode):
                 raise TypeError('node must be instance of ExecutionNode!')
-            
+
+            value.node_id = key
+            self.nodes[key] = value
         elif isinstance(key, tuple) and len(key) == 2:
             self.add_edge(key[0],key[1],value)
         else:

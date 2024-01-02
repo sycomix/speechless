@@ -15,15 +15,13 @@ abs_dir = os.path.split(__file__)[0]
 annotated_data = json.load(open(os.path.join(abs_dir,'dataset/human_cross_annotated_data.json')))
 NUM_WORKERS=16
 
-def get_most_preferred(d:list)->np.ndarray:
-    if np.iterable(d):
-        d = np.asanyarray(d)
-        bins = np.bincount(d)
-        max_val = np.max(bins)
-        argmax = np.where(max_val==bins)[0]
-        return argmax
-    else:
+def get_most_preferred(d:list) -> np.ndarray:
+    if not np.iterable(d):
         return np.asarray([d])
+    d = np.asanyarray(d)
+    bins = np.bincount(d)
+    max_val = np.max(bins)
+    return np.where(max_val==bins)[0]
     
 def agreement_score(x,ref:list)->float:
     majority_x = get_most_preferred(x)
@@ -43,7 +41,7 @@ def get_correlation(x,y):
         return float(random.choice(get_most_preferred(x))==random.choice(get_most_preferred(y)))
     return pearsonr(x,y)[0]
 
-def test_on_annotated_data(evaluator_cfg)->List[List[int]]:
+def test_on_annotated_data(evaluator_cfg) -> List[List[int]]:
     evaluators = [load_registered_automatic_evaluator(evaluator_cfg) for _ in range(NUM_WORKERS)]
     def get_preference(idx):
         data = annotated_data[idx]
@@ -59,6 +57,7 @@ def test_on_annotated_data(evaluator_cfg)->List[List[int]]:
             tools,
             data['answers'],multisample=True)
         return idx,ret
+
     prefer_dict = {}
     with ThreadPoolExecutor(NUM_WORKERS) as pool:
         # future = [pool.submit(get_preference,idx) for idx in range(100)]
@@ -67,7 +66,6 @@ def test_on_annotated_data(evaluator_cfg)->List[List[int]]:
             if thd.exception() is not None:
                 pool.shutdown(cancel_futures=True)
                 raise thd.exception()
-                exit(-1)
             idx,preference = thd.result()
             prefer_dict[idx] = preference
     prefer = [prefer_dict[idx] for idx in range(len(future))]

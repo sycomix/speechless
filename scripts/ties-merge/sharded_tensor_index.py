@@ -89,7 +89,7 @@ class ShardedTensorIndex:
         for model_file_name in ["model.safetensors", "pytorch_model.bin"]:
             candidate_path = os.path.join(base_path, model_file_name)
             if os.path.exists(candidate_path) or os.path.exists(
-                candidate_path + ".index.json"
+                f"{candidate_path}.index.json"
             ):
                 model_path = candidate_path
                 break
@@ -101,13 +101,13 @@ class ShardedTensorIndex:
         tensor_paths = None
         shards = []
 
-        if os.path.exists(model_path + ".index.json"):
+        if os.path.exists(f"{model_path}.index.json"):
             # shared model - parse index
-            with open(model_path + ".index.json", "r") as fd:
+            with open(f"{model_path}.index.json", "r") as fd:
                 weight_map = json.load(fd)["weight_map"]
             tensor_paths = weight_map
 
-            shard_names = list(sorted(set(tensor_paths[e] for e in tensor_paths)))
+            shard_names = list(sorted({tensor_paths[e] for e in tensor_paths}))
             for shard_name in shard_names:
                 info = ShardInfo(
                     shard_name,

@@ -66,7 +66,7 @@ def main():
             Path(d).glob("*.results.json"), Path(d).glob("*.results.json.gz"))]
         results = [r for r in results if r is not None]
         name = d.split("/")[-1] if d.split("/")[-1] != "" else d.split("/")[-2]
-        temperatures = set(r["temperature"] for r in results)
+        temperatures = {r["temperature"] for r in results}
         if len(temperatures) != 1:
             eprint(
                 f"Found multiple temperatures {temperatures} in {d} {results}")
@@ -89,7 +89,7 @@ def main():
         # else:
         #     raise ValueError(f"Unexpected temperature: {temperature}")
 
-            
+
         if args.k is not None:
             pass_k = np.mean([estimator(r["n"], r["c"], args.k) for r in results])
             print(

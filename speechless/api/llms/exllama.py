@@ -33,11 +33,11 @@ system_prompt = """You are a helpful coding assistant. Always answer as helpfull
 llama_prompt = """[INST] <<SYS>>\n<|system_prompt|>\n<</SYS>>\n\n<|user_prompt|> [/INST]"""
 
 def split_user_prompt(user_prompt):
-    sep_instruction = "### Instructions:\n"
     sep_input = "### Input:\n"
     sep_response = "### Response:\n"
     spans = user_prompt.split(sep_input)
     if len(spans) == 2:
+        sep_instruction = "### Instructions:\n"
         instruction = spans[0].replace(sep_instruction, "")
         full_input = spans[1]
     else:
@@ -86,7 +86,7 @@ class ExllamaV2LLM(BaseLLM):
         # config.rope_alpha = args.rope_alpha
         # config.no_flash_attn = args.no_flash_attn
 
-        print("Loading model: " + model_directory)
+        print(f"Loading model: {model_directory}")
         model = ExLlamaV2(config)
 
         # allocate 18 GB to CUDA:0 and 24 GB to CUDA:1.
@@ -205,8 +205,7 @@ class ExllamaV2LLM(BaseLLM):
         return generated_text
 
     async def async_generate(self, prompt: str, sampling_params: Dict[str, str], request_id: str) -> str:
-        generated_text = self.generate(prompt, sampling_params)
-        yield generated_text
+        yield self.generate(prompt, sampling_params)
 
 
     async def agenerate(
@@ -215,9 +214,6 @@ class ExllamaV2LLM(BaseLLM):
         """
         asynchronously generate text using LLM based on an input prompt
         """
-        # avoid mypy error https://github.com/python/mypy/issues/5070
-        if False:  # pylint: disable=using-constant-test
-            yield
 
     def embeddings(self, text: str) -> List[float]:
         """

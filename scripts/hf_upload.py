@@ -13,8 +13,7 @@ def get_args():
     parser.add_argument("--local_dir", type=str, default='/opt/local/llm_models/huggingface.co')
     parser.add_argument("--mirror_url", type=str, default="https://hf-mirror.com")
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 def main():
     args = get_args()

@@ -90,8 +90,7 @@ class Translator:
         self.type = [[arg.annotation for arg in args], returns]
         fn_header = f"function res = {name}({','.join([arg.arg for arg in args])})"
         doc_comment = "% " + re.sub(DOCSTRING_LINESTART_RE, "\n% ", description.strip()) + "\n"
-        res = f"{doc_comment}\n{fn_header}"
-        return res
+        return f"{doc_comment}\n{fn_header}"
 
     def test_suite_prefix_lines(self, entry_point: str) -> List[str]:
         """

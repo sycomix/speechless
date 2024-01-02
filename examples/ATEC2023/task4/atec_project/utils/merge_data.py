@@ -12,7 +12,7 @@ output_path = "utils/build_datasets/"
 output_name = "training.json"
 
 if __name__ == "__main__":
-    print("Merge training datasets: " + os.path.join(output_path, output_name))
+    print(f"Merge training datasets: {os.path.join(output_path, output_name)}")
 
     datasets = []
 

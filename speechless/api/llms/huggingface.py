@@ -146,8 +146,7 @@ class HuggingFaceLLM(BaseLLM):
         }
 
     async def async_generate(self, prompt: str, sampling_params: Dict[str, str], request_id: str) -> str:
-        generated_output = self.generate(prompt, sampling_params)
-        yield generated_output
+        yield self.generate(prompt, sampling_params)
 
     # -------------------- agenerate() --------------------
     async def agenerate(

@@ -21,14 +21,13 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to listen on")
     parser.add_argument("--port", type=int, default=5001, help="Port to listen on")
-    parser.add_argument("--log_level", type=str, default="info", help="Log level")  
+    parser.add_argument("--log_level", type=str, default="info", help="Log level")
     parser.add_argument("--stream", action="store_true", help="Stream output")
     parser.add_argument("--model_family", type=str, default="vllm", help="Model family")
 
     parser.add_argument("--model_name_or_path", type=str, default=None, help="Model name or path")
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 args = get_args()
 
@@ -96,9 +95,7 @@ assert settings.model_family in available_models, f"Model family {settings.model
 
 def get_llm():
     ModelClass = available_models[settings.model_family]
-    llm = ModelClass(settings)
-
-    return llm
+    return ModelClass(settings)
 
 llm = None
 

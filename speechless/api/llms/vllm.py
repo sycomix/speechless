@@ -20,11 +20,11 @@ os.environ['RAY_memory_monitor_refresh_ms'] = '0'
 def create_vllm_llm(model_name_or_path, tensor_parallel_size=1, trust_remote_code=True):
     if tensor_parallel_size < 1:
         tensor_parallel_size = torch.cuda.device_count()
-    llm = LLM(model=model_name_or_path, \
-            trust_remote_code=True, \
-            tensor_parallel_size=tensor_parallel_size
+    return LLM(
+        model=model_name_or_path,
+        trust_remote_code=True,
+        tensor_parallel_size=tensor_parallel_size,
     )
-    return llm
 
 # LLMEngine
 def create_vllm_engine(model_name_or_path, tensor_parallel_size=1, trust_remote_code=True):
@@ -38,9 +38,7 @@ def create_vllm_engine(model_name_or_path, tensor_parallel_size=1, trust_remote_
     )
     engine_args = EngineArgs(**params)
 
-    engine = LLMEngine.from_engine_args(engine_args)
-
-    return engine
+    return LLMEngine.from_engine_args(engine_args)
 
 # AsyncLLMEngine
 def create_vl_async_engine(model_name_or_path, tensor_parallel_size=1, trust_remote_code=True):
@@ -54,9 +52,7 @@ def create_vl_async_engine(model_name_or_path, tensor_parallel_size=1, trust_rem
     )
     engine_args = AsyncEngineArgs(**params)
 
-    engine = AsyncLLMEngine.from_engine_args(engine_args)
-
-    return engine
+    return AsyncLLMEngine.from_engine_args(engine_args)
 
 from ..protocol.openai import CompletionParams as OpenAICompletionParams, CompletionResponse as OpenAICompletionResponse
 from ..protocol.openai import ChatCompletionParams as OpenAIChatCompletionParams, ChatCompletionResponse as OpenAIChatCompletionResponse
@@ -198,9 +194,6 @@ class VllmLLM(BaseLLM):
         """
         asynchronously generate text using LLM based on an input prompt
         """
-        # avoid mypy error https://github.com/python/mypy/issues/5070
-        if False:  # pylint: disable=using-constant-test
-            yield
 
     async def abort(self, request_id: str):
         """

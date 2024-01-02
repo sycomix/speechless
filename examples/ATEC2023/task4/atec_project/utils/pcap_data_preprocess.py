@@ -14,8 +14,6 @@ def build_pcap_data(pcap_file, flow_feature="flow bytes"):
 
     if flow_feature == "flow bytes":
 
-        # flow bytes feature
-        build_data = []
         packets = scapy.rdpcap(pcap_file)
 
         hex_stream = []
@@ -28,7 +26,7 @@ def build_pcap_data(pcap_file, flow_feature="flow bytes"):
             if packet.haslayer("IP"):
                 packet["IP"].src = "0.0.0.0"
                 packet["IP"].dst = "0.0.0.0"
-                
+
             packet_data = packet.copy()
             data = (binascii.hexlify(bytes(packet_data)))
 
@@ -40,8 +38,7 @@ def build_pcap_data(pcap_file, flow_feature="flow bytes"):
             hex_stream.append(packet_string[HEX_PACKET_START_INDEX:min(len(packet_string), MAX_PACKET_LENGTH_IN_FLOW)])
 
         flow_data = "<pck>" + "<pck>".join(hex_stream)
-        build_data.append(flow_data)
-
+        build_data = [flow_data]
     elif flow_feature == "flow sequence":
         flows = extract(pcap_file,
                         filter='tcp or udp',

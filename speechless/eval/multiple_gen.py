@@ -27,13 +27,7 @@ def get_args():
     return args
 
 def generate_speechless_prompt(input):
-#     INSTRUCTION = f"""<s>A Bot
-
-# USER: {input}
-
-# ASSISTANT: """
-    INSTRUCTION = f"""<s>{input}"""
-    return INSTRUCTION
+    return f"""<s>{input}"""
 
 def build_completion_prompts(dataset, prompt_template, sampling_params):
     completion_prompts = []
@@ -61,7 +55,7 @@ def do_convert(args):
     files = glob(f"{args.output_dir}/multiple-generated-*.jsonl")
     for file in tqdm(files, ncols=100):
         s_dir = file.replace(".jsonl", "")
-        s_dir = os.path.dirname(s_dir) + "/multiple/" + os.path.basename(s_dir)
+        s_dir = f"{os.path.dirname(s_dir)}/multiple/{os.path.basename(s_dir)}"
         os.makedirs(s_dir, exist_ok=True)
 
         samples = [json.loads(line.strip()) for line in open(file).readlines()]
@@ -70,10 +64,7 @@ def do_convert(args):
             input_data = s['input_data']
             problem_name = input_data['name']
 
-            completions = []
-            for result_dict in s['result_dicts']:
-                completions.append(result_dict['completion'])
-
+            completions = [result_dict['completion'] for result_dict in s['result_dicts']]
             multiple_data = {
                 'name': problem_name,
                 'language': input_data['language'],

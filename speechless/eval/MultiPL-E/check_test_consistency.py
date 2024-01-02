@@ -29,10 +29,7 @@ def get_tests(language: str):
     path = Path("prompts") / f"humaneval-{language}-reworded.json"
     with open(path, "rt") as f:
         data = json.load(f)
-    tests = {}
-    for obj in data:
-        tests[obj["name"]] = obj["tests"]
-    return tests
+    return {obj["name"]: obj["tests"] for obj in data}
 
 
 def check_completions_file(update: bool, p: Path):

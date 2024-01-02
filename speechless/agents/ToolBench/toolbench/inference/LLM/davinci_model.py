@@ -59,7 +59,7 @@ class Davinci:
         for message in self.conversation_history:
             print_obj = f"{message['role']}: {message['content']} "
             if "function_call" in message.keys():
-                print_obj = print_obj + f"function_call: {message['function_call']}"
+                print_obj = f"{print_obj}function_call: {message['function_call']}"
             print_obj += ""
             print(
                 colored(
@@ -87,16 +87,15 @@ class Davinci:
             api_name = function_dict["name"]
             func_list.append(api_name)
             if "Finish" in api_name:
-                param_str = f'"return_type": string, "final_answer": string, '
+                param_str = '"return_type": string, "final_answer": string, '
                 api_desc = "If you believe that you have obtained a result that can answer the task, please call this function to provide the final answer. ALWAYS call this function at the end of your attempt to answer the question finally."
-                func_str += f"{api_name}: {api_desc}. Your input should be a json (args json schema): {param_str} The Action to trigger this API should be {api_name} and the input parameters should be a json dict string. Pay attention to the type of parameters.\n\n"
             else:
                 api_desc = function_dict["description"][function_dict["description"].find("The description of this function is: ")+len("The description of this function is: "):]
                 for param_name in function_dict["parameters"]["properties"]:
                     data_type = function_dict["parameters"]["properties"][param_name]["type"]
                     param_str += f'"{param_name}": {data_type}, '
                 param_str = "{{" + param_str + "}}"
-                func_str += f"{api_name}: {api_desc}. Your input should be a json (args json schema): {param_str} The Action to trigger this API should be {api_name} and the input parameters should be a json dict string. Pay attention to the type of parameters.\n\n"
+            func_str += f"{api_name}: {api_desc}. Your input should be a json (args json schema): {param_str} The Action to trigger this API should be {api_name} and the input parameters should be a json dict string. Pay attention to the type of parameters.\n\n"
         func_list = str(func_list)
         prompt = FORMAT_INSTRUCTIONS_SYSTEM_FUNCTION_ZEROSHOT.replace("{func_str}", func_str).replace("{func_list}", func_list).replace("{func_list}", func_list).replace("{question}", question)
         prompt = prompt.replace("{{", "{").replace("}}", "}")
@@ -107,11 +106,7 @@ class Davinci:
                 prompt += f"\n{content}\n"
             elif role == "Function":
                 prompt += f"Observation: {content}\n"
-        if functions != []:
-            predictions, usage = self.prediction(prompt)
-        else:
-            predictions, usage = self.prediction(prompt)
-        
+        predictions, usage = self.prediction(prompt)
         # react format prediction
         thought, action, action_input = react_parser(predictions)
         message = {

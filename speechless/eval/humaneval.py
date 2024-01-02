@@ -12,11 +12,7 @@ os.environ['RAY_memory_monitor_refresh_ms'] = '0'
 # huggingface/tokenizers: The current process just got forked, after parallelism has already been used. Disabling parallelism to avoid deadlocks...
 os.environ["TOKENIZERS_PARALLELISM"] = "true" 
 
-if torch.cuda.is_available():
-    device = "cuda"
-else:
-    device = "cpu"
-
+device = "cuda" if torch.cuda.is_available() else "cpu"
 try:
     if torch.backends.mps.is_available():
         device = "mps"
@@ -25,7 +21,7 @@ except:
 
 
 def generate_alpaca_prompt(input):
-    INSTRUCTION = f"""Below is an instruction that describes a task. Write a response that appropriately completes the request.
+    return f"""Below is an instruction that describes a task. Write a response that appropriately completes the request.
 
 
 ### Instruction:
@@ -33,26 +29,19 @@ Create a Python script for this problem:
 {input}
 
 ### Response:"""
-    return INSTRUCTION
 
 
 def generate_chatlm_prompt(input):
-    INSTRUCTION = f"""<|im_start|>system\nYou are a cautious assistant. You carefully follow instructions. You are helpful and harmless and you follow ethical guidelines and promote positive behavior.<|im_end|>\n<|im_start|>user\nCreate a Python script for this problem:{input}<|im_end|>\n<|im_start|>assistant"""
-    return INSTRUCTION
+    return f"""<|im_start|>system\nYou are a cautious assistant. You carefully follow instructions. You are helpful and harmless and you follow ethical guidelines and promote positive behavior.<|im_end|>\n<|im_start|>user\nCreate a Python script for this problem:{input}<|im_end|>\n<|im_start|>assistant"""
 
 
 def generate_llama2_prompt(input):
-    INSTRUCTION = f"""<INST>{input}</INST>"""
-    return INSTRUCTION
+    return f"""<INST>{input}</INST>"""
 
 
 def extract_code(completion):
     toks = completion.split("```")
-    if len(toks) >= 3:
-        code = "```" + toks[1] + "```"
-    else:
-        code = completion
-    return code
+    return f"```{toks[1]}```" if len(toks) >= 3 else completion
 
 
 def do_gen(args):
@@ -65,7 +54,7 @@ def do_gen(args):
 
     prompts = [problems[task_id]['prompt'] for task_id in task_ids]
     num_samples = len(prompts)
-    print("Number of samples: {}".format(num_samples))
+    print(f"Number of samples: {num_samples}")
 
     llm = LLM(model=args.model, tensor_parallel_size=args.num_gpus, trust_remote_code=True)
     sampling_params = SamplingParams(temperature=args.temperature, top_p=1, max_tokens=args.max_len)
@@ -76,58 +65,57 @@ def do_gen(args):
     os.makedirs(output_dir, exist_ok=True)
 
     humaneval_samples_file = f"{output_dir}/humaneval_samples.jsonl"
-    fd = open(humaneval_samples_file, 'w')
-    num_writed = 0
-    for i in trange(num_samples // args.gen_batch_size + 1, ncols=100):
+    with open(humaneval_samples_file, 'w') as fd:
+        num_writed = 0
+        for i in trange(num_samples // args.gen_batch_size + 1, ncols=100):
 
-        ids_batch = []
-        prompt_batch = []
-        for j in range(args.gen_batch_size):
-            n = i * args.gen_batch_size + j
-            if n >= num_samples:
+            ids_batch = []
+            prompt_batch = []
+            for j in range(args.gen_batch_size):
+                n = i * args.gen_batch_size + j
+                if n >= num_samples:
+                    break
+                prompt = prompts[n].replace('    ', '\t')
+
+                if args.prompt_type == 'chatlm':
+                    prompt = generate_chatlm_prompt(prompt)
+                elif args.prompt_type == 'llama2':
+                    prompt = generate_llama2_prompt(prompt)
+                else:
+                    prompt = generate_alpaca_prompt(prompt)
+                prompt_batch.append(prompt)
+                ids_batch.append(task_ids[n])
+
+            if not prompt_batch:
                 break
-            prompt = prompts[n].replace('    ', '\t')
+            # if args.decoding_style == 'sampling':
+            #     loops = int(args.N / args.num_seqs_per_iter)
+            # else:
+            #     loops = 1
+            loops = 1
 
-            if args.prompt_type == 'chatlm':
-                prompt = generate_chatlm_prompt(prompt)
-            elif args.prompt_type == 'llama2':
-                prompt = generate_llama2_prompt(prompt)
-            else:
-                prompt = generate_alpaca_prompt(prompt)
-            prompt_batch.append(prompt)
-            ids_batch.append(task_ids[n])
+            for _ in range(loops):
 
-        if len(prompt_batch) == 0:
-            break
-        # if args.decoding_style == 'sampling':
-        #     loops = int(args.N / args.num_seqs_per_iter)
-        # else:
-        #     loops = 1
-        loops = 1
+                with torch.no_grad():
+                    completions = llm.generate(prompt_batch, sampling_params, use_tqdm=True)
+                gen_seqs = [completion.outputs[0].text for completion in completions]
 
-        for _ in range(loops):
+                if gen_seqs is not None:
+                    for task_id, prompt, gen_seq in zip(ids_batch, prompt_batch, gen_seqs):
+                        completion_seq = gen_seq.split("### Response:")[-1]
 
-            with torch.no_grad():
-                completions = llm.generate(prompt_batch, sampling_params, use_tqdm=True)
-            gen_seqs = [completion.outputs[0].text for completion in completions]
+                        completion_seq = completion_seq.replace('\t', '    ')
+                        completion_seq = extract_code(completion_seq)
 
-            if gen_seqs is not None:
-                for seq_idx, (task_id, prompt, gen_seq) in enumerate(zip(ids_batch, prompt_batch, gen_seqs)):
-                    completion_seq = gen_seq.split("### Response:")[-1]
+                        all_code = gen_seq.replace('\t', '    ')
 
-                    completion_seq = completion_seq.replace('\t', '    ')
-                    completion_seq = extract_code(completion_seq)
-
-                    all_code = gen_seq.replace('\t', '    ')
-
-                    result = {
-                        'task_id': task_id,
-                        'completion': completion_seq,
-                        'all_code': all_code,
-                    }
-                    fd.write(f"{json.dumps(result, ensure_ascii=False)}\n")
-                    num_writed += 1
-    fd.close()
+                        result = {
+                            'task_id': task_id,
+                            'completion': completion_seq,
+                            'all_code': all_code,
+                        }
+                        fd.write(f"{json.dumps(result, ensure_ascii=False)}\n")
+                        num_writed += 1
     print(f"Gnerated {num_writed} samples, and saved to {humaneval_samples_file}")
 
 
@@ -169,8 +157,7 @@ def get_args():
     parser.add_argument('--gen_batch_size', type=int, default=16, help='')
     parser.add_argument('--prompt_type', type=str, default="alpaca", help="alpaca, chatlm, llama2")
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 def main():
     args = get_args()

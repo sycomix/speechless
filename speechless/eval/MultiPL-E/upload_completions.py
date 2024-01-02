@@ -12,7 +12,9 @@ import argparse
 def process_executions(executions_path: Path):
     assert executions_path.name.endswith(".results.json.gz")
     executions = gunzip_json(executions_path)
-    completions_path = executions_path.parent / (executions_path.name[:-16] + ".json.gz")
+    completions_path = (
+        executions_path.parent / f"{executions_path.name[:-16]}.json.gz"
+    )
     completions = gunzip_json(completions_path)
     if completions is None or executions is None:
         return None

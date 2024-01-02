@@ -50,22 +50,6 @@ class Model:
         Produces n samples.
         """
         raise NotImplementedError("This code needs to be updated to take a list of prompts.")
-        input_ids = self.tokenizer(prompt, return_tensors="pt").input_ids
-        input_ids = input_ids.cuda()
-        max_length = max_length + input_ids.flatten().size(0)
-        attention_mask = torch.ones(input_ids.shape, dtype=torch.long, device="cuda")
-        with torch.no_grad():
-            output = self.model.generate(
-                input_ids=input_ids,
-                do_sample=True,
-                top_p=top_p,
-                temperature=temperature,
-                num_return_sequences=n,
-                max_length=max_length,
-                attention_mask=attention_mask,
-                pad_token_id=self.tokenizer.pad_token_id
-            )
-        return output
 
     def decode_single_output(self, output_tensor, prompt):
         detok_hypo_str = self.tokenizer.decode(
@@ -81,9 +65,9 @@ class Model:
         if self.fim_return:
             middles = self.fill_in_the_middle([(prompt, "    return result")] * n, max_tokens, temperature)
             middles = [stop_at_stop_token(middle, [""]) for middle in middles]
-            return [ s + "    return result" for s in middles ]
+            return [f"{s}    return result" for s in middles]
 
-            
+
         prompt = prompt.strip()  # NOTE(arjun): Critical
         output_tensors = self.completion_tensors(
             prompt,

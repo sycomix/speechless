@@ -9,12 +9,11 @@ class my_tree:
 
     def to_json_recursive(self,use_messages=False):
         tree_structure =  self.root.to_json_recursive(use_messages=use_messages)
-        js_obj = {
+        return {
             "size": self.root.get_size(),
-            "max_length":self.root.get_max_depth(),
+            "max_length": self.root.get_max_depth(),
             "tree": tree_structure,
         }
-        return js_obj
 
 
 class tree_node:
@@ -61,18 +60,13 @@ class tree_node:
         return max_depth + 1
 
     def get_depth(self):
-        if self.father == None:
-            return 0
-        return self.father.get_depth() + 1
+        return 0 if self.father is None else self.father.get_depth() + 1
 
     def get_size(self):
         '''
         subtree, including itself
         '''
-        size = 1
-        for child in self.children:
-            size += child.get_size()
-        return size
+        return 1 + sum(child.get_size() for child in self.children)
     
     def prune(self):
         '''
@@ -84,16 +78,6 @@ class tree_node:
 
     def print(self,process_id = 0):
         return
-    
-        if process_id != 0:
-            return
-        color_converter = {"Thought":"red", "Action": "blue", "Action Input": "cyan","Final Answer": "green","Reflection":"blue"}
-        print(colored(f"{self.node_type}: {self.description}",color = color_converter[self.node_type]))
-        if self.observation != "":
-            if len(self.observation) < 1536:
-                print(colored(f"Observation: {self.observation}",color="yellow"))
-            else:
-                print(colored(f"Observation: {self.observation[:1536]}......(len={len(self.observation)})",color="yellow"))
 
 
     @classmethod
@@ -101,7 +85,7 @@ class tree_node:
         '''
         find the first common ancestor
         '''
-        if node1 == None or node2 == None:
+        if node1 is None or node2 is None:
             return None
         if node1 == node2:
             return node1
@@ -141,7 +125,10 @@ class tree_node:
             use_messages = []
             flag = True
             for message_id in range(len(messages))[::-1]:
-                if not ("valid" in messages[message_id].keys() and messages[message_id]["valid"] == False):
+                if (
+                    "valid" not in messages[message_id].keys()
+                    or messages[message_id]["valid"] != False
+                ):
                     use_messages = [messages[message_id]] + use_messages
                 elif flag:
                     flag = False
@@ -193,27 +180,26 @@ class tree_node:
             if node.observation != "" and "Observation" in valid_types:
                 tuncated = node.observation
                 if len(node.observation) > 1024:
-                    tuncated = node.observation[:1024] + f"...(len={len(node.observation)})"
+                    tuncated = f"{node.observation[:1024]}...(len={len(node.observation)})"
                 now_node_des_list.append(f"Observation: {tuncated}\n")
             output_str_list = now_node_des_list + output_str_list
             node = node.father
-        
-        now_str = ""
-        for k, cont in enumerate(output_str_list):
-            now_str += f"step_{k+1}: {cont}\n"
 
-        if now_str == "":
+        now_str = "".join(
+            f"step_{k + 1}: {cont}\n" for k, cont in enumerate(output_str_list)
+        )
+        if not now_str:
             now_str = "None"
         return now_str
 
     def to_json(self, use_messages=False):
         
-        json_obj = {}
-        json_obj["is_terminal"] = False
-        json_obj["pruned"] = self.pruned
-        json_obj["finished"] = self.finished
-
-        json_obj["depth"] = self.get_depth()
+        json_obj = {
+            "is_terminal": False,
+            "pruned": self.pruned,
+            "finished": self.finished,
+            "depth": self.get_depth(),
+        }
         json_obj["node_type"] = self.node_type
         json_obj["description"] = self.description
         json_obj["Elo"] = self.Elo
@@ -227,11 +213,11 @@ class tree_node:
         if self.io_state != None and self.node_type == "Action Input":
             json_obj["io_state"] = self.io_state.to_json()
 
-            
+
         if use_messages:
             json_obj["messages"] = []
             for message in self.messages:
-                if not ("valid" in message.keys() and message["valid"] == False):
+                if "valid" not in message.keys() or message["valid"] != False:
                     json_obj["messages"].append(message["role"])
                 else:
                     json_obj["messages"].append(message["role"] + "_invalid")

@@ -31,9 +31,9 @@ class AnswerPass(Enum):
 
 @register_evaluator
 class ReinforceToolLearningEvaluator(OpenAINormalizedEvaluator):
-    def check_has_hallucination(self,available_tools:List[Dict],answer:Dict[Any,Any])->bool:
-        available_names = set([tool['name'] for tool in available_tools])
-        
+    def check_has_hallucination(self,available_tools:List[Dict],answer:Dict[Any,Any]) -> bool:
+        available_names = {tool['name'] for tool in available_tools}
+
         def check_node_valid(node:Dict)->bool:
             # print(node)
             if node['role'] == "tool":
@@ -42,7 +42,7 @@ class ReinforceToolLearningEvaluator(OpenAINormalizedEvaluator):
                 name = re.findall(r"'name':\s*'(.*?)'",node['message'],re.DOTALL)[0]
                 return name in available_names
             return True            
-        
+
         def recurssive_check(nodes:Union[List,Dict])->bool:
             if isinstance(nodes,Dict):
                 if not check_node_valid(nodes):
@@ -55,7 +55,7 @@ class ReinforceToolLearningEvaluator(OpenAINormalizedEvaluator):
                         return False
                 return True
             raise ValueError(f'Unknown node type {type(nodes)}')
-            
+
         return recurssive_check(answer['answer_details'])
     
     def check_is_solved(self,
@@ -69,7 +69,7 @@ class ReinforceToolLearningEvaluator(OpenAINormalizedEvaluator):
             if return_reason:
                 return AnswerStatus.Unsolved, "Empty final answer!"
             return AnswerStatus.Unsolved, ""
-        
+
         ret = self.function_call(
             'check_answer_status',
             {
@@ -79,7 +79,7 @@ class ReinforceToolLearningEvaluator(OpenAINormalizedEvaluator):
             return_reason=return_reason
         )
         answer_status = AnswerStatus(ret['answer_status'])
-        
+
         if answer_status == AnswerStatus.Unsure:
             # detailed check here
             ret = self.function_call(
@@ -92,20 +92,18 @@ class ReinforceToolLearningEvaluator(OpenAINormalizedEvaluator):
             )
             answer_status = AnswerStatus(ret['answer_status'])
 
-        if return_reason:
-            return answer_status,ret['reason']
-        return answer_status, ""
+        return (answer_status, ret['reason']) if return_reason else (answer_status, "")
     
     def check_task_solvable(self,
                             task_description:Dict,
                             has_been_solved=False,
                             return_reason=False,
-                            )->Union[TaskStatus,Optional[str]]:
+                            ) -> Union[TaskStatus,Optional[str]]:
         if has_been_solved:
             if return_reason:
                 return TaskStatus.Solvable, 'Task has been solved before.'
             return TaskStatus.Solvable, ''
-        
+
         ret = self.function_call(
             'check_task_solvable',
             {
@@ -114,43 +112,40 @@ class ReinforceToolLearningEvaluator(OpenAINormalizedEvaluator):
             return_reason=return_reason
         )
         task_status = TaskStatus(ret['task_status'])
-        if return_reason:
-            return task_status, ret['reason']
-        return task_status, ''
+        return (task_status, ret['reason']) if return_reason else (task_status, '')
         
     def is_passed(self,
                   task_description:Dict,
                   answer:Dict[Any,Any],
                   answer_status:AnswerStatus=None,
                   task_status:TaskStatus=None,
-                  )->AnswerPass:
+                  ) -> AnswerPass:
         
         if answer_status is None:
             answer_status, _ = self.check_is_solved(task_description,answer)
-            
+
         if answer_status == AnswerStatus.Solved:
             return AnswerPass.Passed
-        else:
-            if task_status is None:
-                task_status, _ = self.check_task_solvable(
-                    task_description,
-                    has_been_solved=answer_status==AnswerStatus.Solved)
-            
-            if answer_status == AnswerStatus.Unsolved:
-                if task_status == TaskStatus.Solvable:
-                    return AnswerPass.Failed
-                if task_status == TaskStatus.Unsure:
-                    return AnswerPass.Unsure
-                if task_status == TaskStatus.Unsolvable:
-                    return AnswerPass.Passed
-            elif answer_status == AnswerStatus.Unsure:
-                if task_status == TaskStatus.Solvable:
-                    return AnswerPass.Unsure
-                if task_status == TaskStatus.Unsure:
-                    return AnswerPass.Unsure
-                if task_status == TaskStatus.Unsolvable:
-                    return AnswerPass.Passed
-                                
+        if task_status is None:
+            task_status, _ = self.check_task_solvable(
+                task_description,
+                has_been_solved=answer_status==AnswerStatus.Solved)
+
+        if answer_status == AnswerStatus.Unsolved:
+            if task_status == TaskStatus.Solvable:
+                return AnswerPass.Failed
+            if task_status == TaskStatus.Unsure:
+                return AnswerPass.Unsure
+            if task_status == TaskStatus.Unsolvable:
+                return AnswerPass.Passed
+        elif answer_status == AnswerStatus.Unsure:
+            if task_status == TaskStatus.Solvable:
+                return AnswerPass.Unsure
+            if task_status == TaskStatus.Unsure:
+                return AnswerPass.Unsure
+            if task_status == TaskStatus.Unsolvable:
+                return AnswerPass.Passed
+
         return AnswerPass.Failed
     
     def check_identity_answers(self,

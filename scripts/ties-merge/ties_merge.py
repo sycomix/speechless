@@ -144,7 +144,7 @@ class ModelReference:
 
         out_path = os.path.join(
             cache_dir,
-            os.path.basename(self.path) + "_" + os.path.basename(self.lora_path),
+            f"{os.path.basename(self.path)}_{os.path.basename(self.lora_path)}",
         )
 
         if not os.path.exists(out_path):
